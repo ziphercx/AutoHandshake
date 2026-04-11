@@ -52,6 +52,14 @@ void initUSBMSC() {
     
     // คำนวณขนาด SPIFFS เป็น sectors (512 bytes per sector)
     size_t totalBytes = SPIFFS.totalBytes();
+    
+    // ป้องกัน division by zero และค่าที่ไม่ถูกต้อง
+    if (totalBytes == 0) {
+        Serial.println("[USB] ERROR: SPIFFS totalBytes = 0, ไม่สามารถเริ่ม USB MSC ได้!");
+        usbMscMode = false;
+        return;
+    }
+    
     uint32_t sectorCount = (totalBytes + 511) / 512;
     
     msc.begin(sectorCount, 512);

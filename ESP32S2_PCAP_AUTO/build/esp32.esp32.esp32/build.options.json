@@ -1,0 +1,10 @@
+{
+  "additionalFiles": "..\\..,..\\..,..\\..,..\\..,..\\..,..\\..,..\\..,..\\..,..\\..,..\\..,..\\..,..\\..,..\\..",
+  "builtInLibrariesFolders": "C:\\Users\\User\\AppData\\Local\\Arduino15\\libraries",
+  "compiler.optimization_flags": "-Os",
+  "customBuildProperties": "build.warn_data_percentage=75",
+  "fqbn": "esp32:esp32:esp32:UploadSpeed=921600,CPUFreq=240,FlashFreq=80,FlashMode=qio,FlashSize=4M,PartitionScheme=no_ota,DebugLevel=none,PSRAM=disabled,LoopCore=1,EventsCore=1,EraseFlash=all,JTAGAdapter=default,ZigbeeMode=default",
+  "hardwareFolders": "c:\\Users\\User\\AppData\\Local\\Arduino15\\packages",
+  "otherLibrariesFolders": "c:\\Users\\User\\Documents\\Arduino\\libraries",
+  "sketchLocation": "C:\\Users\\User\\Documents\\Arduino\\ZiphersPCAP\\ESP32S2_PCAP_AUTO"
+}

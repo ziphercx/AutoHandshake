@@ -29,10 +29,13 @@ extern "C" int ieee80211_raw_frame_sanity_check(int32_t arg, int32_t arg2, int32
 // ==================== GLOBAL VARIABLE DEFINITIONS ====================
 APInfo apList[MAX_APS];
 HandshakeInfo handshakes[MAX_HANDSHAKES];
+BeaconTracker beaconTrackers[MAX_BEACON_TRACKERS];
 int apCount = 0;
 int handshakeCount = 0;
+int beaconTrackerCount = 0;
 uint32_t packetCount = 0;
 uint32_t deauthCount = 0;
+uint32_t filteredPacketCount = 0;
 
 uint8_t currentChannel = 1;
 uint32_t channelStartTime = 0;
@@ -48,6 +51,10 @@ int activeChannelIndex = 0;
 File pcapFile;
 bool fileOpen = false;
 char currentFilename[32];
+
+// PCAP write buffer
+uint8_t pcapWriteBuffer[PCAP_BUFFER_SIZE];
+uint16_t pcapBufferPos = 0;
 
 // Web Server Variables
 bool webServerMode = false;

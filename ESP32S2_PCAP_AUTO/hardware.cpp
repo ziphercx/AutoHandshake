@@ -33,35 +33,41 @@ void checkButton() {
         buttonPressed = true;
         buttonPressStart = millis();
         if (webServerMode) {
-            Serial.println("[BUTTON] กดปุ่ม - กดค้าง 3 วิเพื่อกลับสู่โหมดดักจับ");
+            Serial.println("[BUTTON] กดปุ่ม - กดค้าง 2 วิเพื่อกลับสู่โหมดดักจับ");
         } else {
-            Serial.println("[BUTTON] กดปุ่ม - กดค้าง 3 วิเพื่อเปิด Web Manager");
+            Serial.println("[BUTTON] กดปุ่ม - กดค้าง 2 วิเพื่อเปิด Web Manager");
         }
     } else if (!currentButtonState && buttonPressed) {
         // ปุ่มเพิ่งถูกปล่อย
         buttonPressed = false;
         uint32_t pressDuration = millis() - buttonPressStart;
         
-        if (pressDuration >= 3000) {
-            if (webServerMode) {
-                Serial.println("[BUTTON] กดค้าง 3 วิ - กลับสู่โหมดดักจับ!");
-                stopWebServer();
-            } else {
-                Serial.println("[BUTTON] กดค้าง 3 วิ - เปิด Web File Manager!");
-                startWebServer();
-            }
-        } else {
-            Serial.printf("[BUTTON] กดสั้น %lu ms - ต้องกดค้าง 3 วิ\n", pressDuration);
+        if (pressDuration < 2000) {
+            Serial.printf("[BUTTON] กดสั้น %lu ms - ต้องกดค้าง 2 วิ\n", pressDuration);
         }
     } else if (currentButtonState && buttonPressed) {
-        // ปุ่มกำลังถูกกดค้าง - กระพิบ LED เพื่อแสดงสถานะ
+        // ปุ่มกำลังถูกกดค้าง
         uint32_t pressDuration = millis() - buttonPressStart;
         
-        if (pressDuration >= 1000 && pressDuration < 3000) {
+        // กระพิบ LED เพื่อแสดงสถานะ
+        if (pressDuration >= 1000 && pressDuration < 5000) {
             static uint32_t lastBlink = 0;
             if (millis() - lastBlink >= 500) {
                 lastBlink = millis();
                 blinkLED(100);
+            }
+        }
+        
+        // เปลี่ยนโหมดทันทีเมื่อครบ 2 วินาที (ไม่ต้องรอปล่อย)
+        if (pressDuration >= 2000) {
+            buttonPressed = false; // รีเซ็ตสถานะเพื่อไม่ให้ trigger ซ้ำ
+            
+            if (webServerMode) {
+                Serial.println("[BUTTON] กดค้าง 2 วิ - กลับสู่โหมดดักจับ!");
+                stopWebServer();
+            } else {
+                Serial.println("[BUTTON] กดค้าง 2 วิ - เปิด Web File Manager!");
+                startWebServer();
             }
         }
     }

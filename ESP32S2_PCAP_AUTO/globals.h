@@ -7,10 +7,13 @@
 // ==================== GLOBAL VARIABLES ====================
 extern APInfo apList[MAX_APS];
 extern HandshakeInfo handshakes[MAX_HANDSHAKES];
+extern BeaconTracker beaconTrackers[MAX_BEACON_TRACKERS];
 extern int apCount;
 extern int handshakeCount;
+extern int beaconTrackerCount;
 extern uint32_t packetCount;
 extern uint32_t deauthCount;
+extern uint32_t filteredPacketCount;  // นับ packet ที่ผ่านการกรอง
 
 extern uint8_t currentChannel;
 extern uint32_t channelStartTime;
@@ -26,6 +29,10 @@ extern int activeChannelIndex;
 extern File pcapFile;
 extern bool fileOpen;
 extern char currentFilename[32];
+
+// PCAP write buffer
+extern uint8_t pcapWriteBuffer[PCAP_BUFFER_SIZE];
+extern uint16_t pcapBufferPos;
 
 // Web Server Variables
 extern bool webServerMode;

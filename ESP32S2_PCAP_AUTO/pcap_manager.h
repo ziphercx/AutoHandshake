@@ -20,6 +20,13 @@ String getSSIDFromBSSID(uint8_t* bssid);
 void packetHandler(void* buf, wifi_promiscuous_pkt_type_t type);
 void processEAPOLPacket(uint8_t* payload, uint16_t len, int eapolOffset);
 
+// ==================== PACKET FILTERING ====================
+bool shouldCaptureBeacon(uint8_t* bssid);
+bool shouldCapturePacket(uint8_t* payload, uint16_t len);
+
+// ==================== MEMORY OPTIMIZATION ====================
+void optimizeMemory();
+
 // ==================== DEAUTH FUNCTIONS ====================
 void sendDeauthToChannel(uint8_t channel);
 

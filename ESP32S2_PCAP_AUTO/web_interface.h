@@ -13,6 +13,7 @@ void handleRoot();
 void handleDownload();
 void handleView();
 void handleDelete();
+void handleFormat();
 void handleRestart();
 void handleNotFound();
 

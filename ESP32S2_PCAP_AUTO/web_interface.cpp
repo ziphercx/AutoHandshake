@@ -52,7 +52,7 @@ void handleRoot() {
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
             font-family: 'Courier New', monospace; 
-            background: #0a0e27; 
+            background: #0a1f0a; 
             color: #00ff41;
             padding: 20px;
             line-height: 1.6;
@@ -60,13 +60,13 @@ void handleRoot() {
         .terminal { 
             max-width: 900px; 
             margin: 0 auto; 
-            background: #1a1f3a; 
+            background: #0d2b0d; 
             border: 2px solid #00ff41;
             border-radius: 8px;
-            box-shadow: 0 0 30px rgba(0, 255, 65, 0.3);
+            box-shadow: 0 0 30px rgba(0, 255, 65, 0.5);
         }
         .terminal-header {
-            background: #0f1729;
+            background: #051805;
             padding: 10px 20px;
             border-bottom: 1px solid #00ff41;
             display: flex;
@@ -92,12 +92,12 @@ void handleRoot() {
             color: #00ff41; 
             text-align: center; 
             margin-bottom: 20px;
-            text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+            text-shadow: 0 0 15px rgba(0, 255, 65, 0.8);
             font-size: 24px;
         }
-        .prompt { color: #ff6b6b; }
+        .prompt { color: #00cc33; }
         .stats { 
-            background: #0f1729; 
+            background: #051805; 
             padding: 15px; 
             border: 1px solid #00ff41;
             border-radius: 5px; 
@@ -105,13 +105,13 @@ void handleRoot() {
             font-size: 14px;
         }
         .stats-line { margin: 5px 0; }
-        .label { color: #64b5f6; }
-        .value { color: #ffd700; }
-        .success { color: #27c93f; }
-        .warning { color: #ffbd2e; }
+        .label { color: #66ff66; }
+        .value { color: #ffff00; }
+        .success { color: #00ff41; }
+        .warning { color: #ffaa00; }
         .file-list { margin: 20px 0; }
         .file-header {
-            color: #64b5f6;
+            color: #66ff66;
             font-size: 16px;
             margin-bottom: 10px;
             border-bottom: 1px dashed #00ff41;
@@ -123,15 +123,16 @@ void handleRoot() {
             align-items: center;
             padding: 12px; 
             margin: 8px 0; 
-            background: #0f1729;
+            background: #051805;
             border-left: 3px solid #00ff41;
             border-radius: 3px;
             transition: all 0.3s;
         }
         .file-item:hover {
-            background: #1a2040;
-            border-left-color: #64b5f6;
+            background: #0a2b0a;
+            border-left-color: #66ff66;
             transform: translateX(5px);
+            box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
         }
         .file-name { 
             color: #00ff41; 
@@ -139,7 +140,7 @@ void handleRoot() {
             font-size: 14px;
         }
         .file-size { 
-            color: #888; 
+            color: #66ff66; 
             font-size: 12px;
             margin-top: 3px;
         }
@@ -156,49 +157,67 @@ void handleRoot() {
             transition: all 0.3s;
         }
         .btn-download { 
-            background: #0f1729; 
-            color: #27c93f; 
-            border-color: #27c93f;
+            background: #051805; 
+            color: #00ff41; 
+            border-color: #00ff41;
         }
         .btn-download:hover { 
-            background: #27c93f; 
-            color: #0a0e27;
+            background: #00ff41; 
+            color: #051805;
+            box-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
         }
         .btn-delete { 
-            background: #0f1729; 
+            background: #051805; 
             color: #ff5f56; 
             border-color: #ff5f56;
         }
         .btn-delete:hover { 
             background: #ff5f56; 
-            color: #0a0e27;
+            color: #051805;
         }
         .btn-view { 
-            background: #0f1729; 
-            color: #64b5f6; 
-            border-color: #64b5f6;
+            background: #051805; 
+            color: #66ff66; 
+            border-color: #66ff66;
         }
         .btn-view:hover { 
-            background: #64b5f6; 
-            color: #0a0e27;
+            background: #66ff66; 
+            color: #051805;
+        }
+        .btn-format {
+            background: #051805;
+            color: #ff3333;
+            border: 2px solid #ff3333;
+            padding: 12px 24px;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: bold;
+            margin: 10px 5px;
+        }
+        .btn-format:hover {
+            background: #ff3333;
+            color: #051805;
+            box-shadow: 0 0 15px rgba(255, 51, 51, 0.5);
         }
         .back-btn { 
-            background: #0f1729; 
-            color: #ffbd2e; 
-            border: 2px solid #ffbd2e;
+            background: #051805; 
+            color: #00ff41; 
+            border: 2px solid #00ff41;
             padding: 12px 24px; 
             border-radius: 5px;
             font-size: 14px;
             font-weight: bold;
+            margin: 10px 5px;
         }
         .back-btn:hover {
-            background: #ffbd2e;
-            color: #0a0e27;
+            background: #00ff41;
+            color: #051805;
+            box-shadow: 0 0 15px rgba(0, 255, 65, 0.5);
         }
         .center { text-align: center; margin-top: 30px; }
         .no-files {
             text-align: center;
-            color: #888;
+            color: #66ff66;
             padding: 20px;
             font-style: italic;
         }
@@ -225,7 +244,10 @@ void handleRoot() {
     html += "<div class='stats-line'><span class='label'>Total:</span> <span class='value'>" + String(totalBytes / 1024) + " KB</span></div>";
     html += "<div class='stats-line'><span class='label'>Used:</span> <span class='value'>" + String(usedBytes / 1024) + " KB</span></div>";
     html += "<div class='stats-line'><span class='label'>Free:</span> <span class='value'>" + String(freeBytes / 1024) + " KB</span></div>";
-    html += "<div class='stats-line'><span class='label'>Usage:</span> <span class='value'>" + String((usedBytes * 100) / totalBytes) + "%</span></div>";
+    
+    // ป้องกัน division by zero
+    int usagePercent = (totalBytes > 0) ? ((usedBytes * 100) / totalBytes) : 0;
+    html += "<div class='stats-line'><span class='label'>Usage:</span> <span class='value'>" + String(usagePercent) + "%</span></div>";
 #ifdef USB_MSC_ENABLED
     html += "<div class='stats-line'><span class='label'>USB Drive:</span> <span class='success'>● ACTIVE</span></div>";
 #else
@@ -273,6 +295,8 @@ void handleRoot() {
     html += R"(
             </div>
             <div class='center'>
+                <a href='/format' class='btn btn-format' onclick='return confirm("⚠️ WARNING: This will DELETE ALL FILES!\n\nAre you sure you want to format SPIFFS?")'>🗑️ FORMAT SPIFFS (DELETE ALL)</a>
+                <br>
                 <a href='/restart' class='btn back-btn' onclick='return confirm("Exit web mode and return to capture?")'>⟲ BACK TO CAPTURE MODE</a>
             </div>
         </div>
@@ -406,6 +430,66 @@ void handleRestart() {
     stopWebServer();
 }
 
+void handleFormat() {
+    Serial.println("[WEB] ========================================");
+    Serial.println("[WEB] ⚠️  FORMAT SPIFFS - DELETING ALL FILES!");
+    Serial.println("[WEB] ========================================");
+    
+    // ลบไฟล์ทั้งหมดก่อน
+    File root = SPIFFS.open("/");
+    File file = root.openNextFile();
+    int deletedCount = 0;
+    
+    while (file) {
+        if (!file.isDirectory()) {
+            String fileName = file.name();
+            file.close();
+            
+            if (SPIFFS.remove(fileName)) {
+                Serial.printf("[WEB] Deleted: %s\n", fileName.c_str());
+                deletedCount++;
+            }
+        }
+        file = root.openNextFile();
+    }
+    
+    Serial.printf("[WEB] Deleted %d files\n", deletedCount);
+    
+    // Format SPIFFS
+    Serial.println("[WEB] Formatting SPIFFS...");
+    bool formatSuccess = SPIFFS.format();
+    
+    if (formatSuccess) {
+        Serial.println("[WEB] ✓ Format สำเร็จ!");
+        
+        // แสดงพื้นที่ว่างหลัง format
+        size_t totalBytes = SPIFFS.totalBytes();
+        size_t usedBytes = SPIFFS.usedBytes();
+        Serial.printf("[WEB] SPIFFS: %d KB total, %d KB used, %d KB free\n", 
+                     totalBytes / 1024, usedBytes / 1024, (totalBytes - usedBytes) / 1024);
+        
+        server.send(200, "text/html", 
+            "<html><head><meta charset='UTF-8'></head><body style='background:#0a1f0a;color:#00ff41;font-family:monospace;padding:20px;'>"
+            "<h2>✓ Format สำเร็จ!</h2>"
+            "<p>ลบไฟล์ทั้งหมด " + String(deletedCount) + " ไฟล์</p>"
+            "<p>SPIFFS ถูก format เรียบร้อยแล้ว</p>"
+            "<p>กำลังกลับหน้าหลัก...</p>"
+            "<script>setTimeout(function(){window.location='/';}, 3000);</script>"
+            "</body></html>");
+    } else {
+        Serial.println("[WEB] ✗ Format ล้มเหลว!");
+        
+        server.send(500, "text/html", 
+            "<html><head><meta charset='UTF-8'></head><body style='background:#0a1f0a;color:#ff5f56;font-family:monospace;padding:20px;'>"
+            "<h2>✗ Format ล้มเหลว!</h2>"
+            "<p>ไม่สามารถ format SPIFFS ได้</p>"
+            "<p><a href='/' style='color:#00ff41;'>กลับหน้าหลัก</a></p>"
+            "</body></html>");
+    }
+    
+    Serial.println("[WEB] ========================================");
+}
+
 void handleNotFound() {
     // Captive Portal - redirect all requests to root
     server.sendHeader("Location", "/");
@@ -448,6 +532,7 @@ void startWebServer() {
     server.on("/download", handleDownload);
     server.on("/view", handleView);
     server.on("/delete", handleDelete);
+    server.on("/format", handleFormat);
     server.on("/restart", handleRestart);
     server.onNotFound(handleNotFound);
     
