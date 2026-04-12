@@ -10,12 +10,12 @@ void stopWebServer();
 void initLED() {
     pinMode(LED_PIN, OUTPUT);
     digitalWrite(LED_PIN, LOW);
-    Serial.printf("[INIT] LED พร้อมที่ IO%d\n", LED_PIN);
+    Serial.printf("[INIT] LED ready at IO%d\n", LED_PIN);
 }
 
 void initButton() {
     pinMode(BUTTON_PIN, INPUT_PULLUP);
-    Serial.printf("[INIT] Button พร้อมที่ IO%d\n", BUTTON_PIN);
+    Serial.printf("[INIT] Button ready at IO%d\n", BUTTON_PIN);
 }
 
 void blinkLED(int duration) {
@@ -29,27 +29,27 @@ void checkButton() {
     bool currentButtonState = digitalRead(BUTTON_PIN) == LOW;
     
     if (currentButtonState && !buttonPressed) {
-        // ปุ่มเพิ่งถูกกด
+        // Button just pressed
         buttonPressed = true;
         buttonPressStart = millis();
         if (webServerMode) {
-            Serial.println("[BUTTON] กดปุ่ม - กดค้าง 2 วิเพื่อกลับสู่โหมดดักจับ");
+            Serial.println("[BUTTON] Button pressed - hold 2s to return to capture mode");
         } else {
-            Serial.println("[BUTTON] กดปุ่ม - กดค้าง 2 วิเพื่อเปิด Web Manager");
+            Serial.println("[BUTTON] Button pressed - hold 2s to open Web Manager");
         }
     } else if (!currentButtonState && buttonPressed) {
-        // ปุ่มเพิ่งถูกปล่อย
+        // Button just released
         buttonPressed = false;
         uint32_t pressDuration = millis() - buttonPressStart;
         
         if (pressDuration < 2000) {
-            Serial.printf("[BUTTON] กดสั้น %lu ms - ต้องกดค้าง 2 วิ\n", pressDuration);
+            Serial.printf("[BUTTON] Short press %lu ms - need to hold 2s\n", pressDuration);
         }
     } else if (currentButtonState && buttonPressed) {
-        // ปุ่มกำลังถูกกดค้าง
+        // Button being held
         uint32_t pressDuration = millis() - buttonPressStart;
         
-        // กระพิบ LED เพื่อแสดงสถานะ
+        // Blink LED to show status
         if (pressDuration >= 1000 && pressDuration < 5000) {
             static uint32_t lastBlink = 0;
             if (millis() - lastBlink >= 500) {
@@ -58,15 +58,15 @@ void checkButton() {
             }
         }
         
-        // เปลี่ยนโหมดทันทีเมื่อครบ 2 วินาที (ไม่ต้องรอปล่อย)
+        // Change mode immediately when 2 seconds reached (no need to wait for release)
         if (pressDuration >= 2000) {
-            buttonPressed = false; // รีเซ็ตสถานะเพื่อไม่ให้ trigger ซ้ำ
+            buttonPressed = false; // Reset state to prevent re-trigger
             
             if (webServerMode) {
-                Serial.println("[BUTTON] กดค้าง 2 วิ - กลับสู่โหมดดักจับ!");
+                Serial.println("[BUTTON] Held 2s - returning to capture mode!");
                 stopWebServer();
             } else {
-                Serial.println("[BUTTON] กดค้าง 2 วิ - เปิด Web File Manager!");
+                Serial.println("[BUTTON] Held 2s - opening Web File Manager!");
                 startWebServer();
             }
         }
@@ -75,14 +75,14 @@ void checkButton() {
 
 // ==================== OPTIMIZATION FUNCTIONS ====================
 void optimizeMemory() {
-    // ล้าง WiFi scan cache
+    // Clear WiFi scan cache
     WiFi.scanDelete();
     
     // Force garbage collection
     if (ESP.getFreeHeap() < 15000) {
         Serial.println("[OPTIMIZE] Low memory - cleaning up...");
         
-        // ปิดไฟล์ชั่วคราวเพื่อ flush buffer
+        // Close file temporarily to flush buffer
         if (fileOpen && pcapFile) {
             pcapFile.flush();
         }

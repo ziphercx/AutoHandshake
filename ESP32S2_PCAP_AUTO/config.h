@@ -5,23 +5,23 @@
 
 // ==================== CONFIGURATION ====================
 #define MAX_APS 50
-#define MAX_BEACON_TRACKERS 100  // สำหรับ deduplicate beacon
+#define MAX_BEACON_TRACKERS 100  // For beacon deduplication
 #define MAX_HANDSHAKES 20
 #define BEACON_DEDUPE_INTERVAL 100  // 100ms
-#define PCAP_BUFFER_SIZE 2048  // Buffer สำหรับเขียนไฟล์
-#define DEAUTH_DURATION 2000    // 2 วินาที (ลดจาก 3)
-#define CAPTURE_DURATION 5000   // 5 วินาที (ลดจาก 10)
-#define DEAUTH_INTERVAL 50      // ส่ง deauth ทุก 50ms
+#define PCAP_BUFFER_SIZE 2048  // Buffer for file writing
+#define DEAUTH_DURATION 2000    // 2 seconds (reduced from 3)
+#define CAPTURE_DURATION 5000   // 5 seconds (reduced from 10)
+#define DEAUTH_INTERVAL 50      // Send deauth every 50ms
 
 // ==================== WIFI BAND CONFIGURATION ====================
-// ESP32-C5 รองรับ WiFi 6 (2.4GHz + 5GHz)
+// ESP32-C5 supports WiFi 6 (2.4GHz + 5GHz)
 #if defined(CONFIG_IDF_TARGET_ESP32C5)
   #define WIFI_5GHZ_SUPPORTED 1
   #define MAX_CHANNELS_24GHZ 14    // 2.4GHz: CH 1-14
   #define MAX_CHANNELS_5GHZ 25     // 5GHz: CH 36,40,44,48,52,56,60,64,100,104,108,112,116,120,124,128,132,136,140,144,149,153,157,161,165
   #define MAX_CHANNELS (MAX_CHANNELS_24GHZ + MAX_CHANNELS_5GHZ)
 #else
-  // ESP32 / S2 / S3 / C3 รองรับเฉพาะ 2.4GHz
+  // ESP32 / S2 / S3 / C3 support 2.4GHz only
   #define WIFI_5GHZ_SUPPORTED 0
   #define MAX_CHANNELS_24GHZ 14
   #define MAX_CHANNELS MAX_CHANNELS_24GHZ
@@ -42,7 +42,7 @@
   #define LED_PIN -1
 #endif
 
-#define BUTTON_PIN 0            // ปุ่มสำหรับเปิด Web File Manager
+#define BUTTON_PIN 0            // Button for Web File Manager
 
 // ==================== STRUCTURES ====================
 struct APInfo {
@@ -52,7 +52,7 @@ struct APInfo {
     int rssi;
 };
 
-// สำหรับ deduplicate beacon
+// For beacon deduplication
 struct BeaconTracker {
     uint8_t bssid[6];
     uint32_t lastSeen;

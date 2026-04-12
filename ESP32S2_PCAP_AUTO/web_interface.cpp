@@ -245,7 +245,7 @@ void handleRoot() {
     html += "<div class='stats-line'><span class='label'>Used:</span> <span class='value'>" + String(usedBytes / 1024) + " KB</span></div>";
     html += "<div class='stats-line'><span class='label'>Free:</span> <span class='value'>" + String(freeBytes / 1024) + " KB</span></div>";
     
-    // ป้องกัน division by zero
+    // Prevent division by zero
     int usagePercent = (totalBytes > 0) ? ((usedBytes * 100) / totalBytes) : 0;
     html += "<div class='stats-line'><span class='label'>Usage:</span> <span class='value'>" + String(usagePercent) + "%</span></div>";
 #ifdef USB_MSC_ENABLED
@@ -316,7 +316,7 @@ void handleDownload() {
     
     String fileName = server.arg("file");
     
-    // ถ้าไม่มี / ข้างหน้า ให้เพิ่มให้
+    // If no / prefix, add it
     if (!fileName.startsWith("/")) {
         fileName = "/" + fileName;
     }
@@ -337,7 +337,7 @@ void handleDownload() {
         contentType = "application/vnd.tcpdump.pcap";
     }
     
-    // ใช้ชื่อไฟล์โดยไม่มี / สำหรับ download
+    // Use filename without / for download
     String downloadName = fileName;
     if (downloadName.startsWith("/")) {
         downloadName = downloadName.substring(1);
@@ -356,7 +356,7 @@ void handleView() {
     
     String fileName = server.arg("file");
     
-    // ถ้าไม่มี / ข้างหน้า ให้เพิ่มให้
+    // If no / prefix, add it
     if (!fileName.startsWith("/")) {
         fileName = "/" + fileName;
     }
@@ -402,7 +402,7 @@ void handleDelete() {
     
     String fileName = server.arg("file");
     
-    // ถ้าไม่มี / ข้างหน้า ให้เพิ่มให้
+    // If no / prefix, add it
     if (!fileName.startsWith("/")) {
         fileName = "/" + fileName;
     }
@@ -426,7 +426,7 @@ void handleRestart() {
         "<script>setTimeout(function(){window.close();}, 2000);</script></body></html>");
     delay(1000);
     
-    // ปิด Web Server และกลับสู่โหมดดักจับ
+    // Stop Web Server and return to capture mode
     stopWebServer();
 }
 
@@ -435,7 +435,7 @@ void handleFormat() {
     Serial.println("[WEB] ⚠️  FORMAT SPIFFS - DELETING ALL FILES!");
     Serial.println("[WEB] ========================================");
     
-    // ลบไฟล์ทั้งหมดก่อน
+    // Delete all files first
     File root = SPIFFS.open("/");
     File file = root.openNextFile();
     int deletedCount = 0;
@@ -460,9 +460,9 @@ void handleFormat() {
     bool formatSuccess = SPIFFS.format();
     
     if (formatSuccess) {
-        Serial.println("[WEB] ✓ Format สำเร็จ!");
+        Serial.println("[WEB] ✓ Format successful!");
         
-        // แสดงพื้นที่ว่างหลัง format
+        // Show free space after format
         size_t totalBytes = SPIFFS.totalBytes();
         size_t usedBytes = SPIFFS.usedBytes();
         Serial.printf("[WEB] SPIFFS: %d KB total, %d KB used, %d KB free\n", 
@@ -470,20 +470,20 @@ void handleFormat() {
         
         server.send(200, "text/html", 
             "<html><head><meta charset='UTF-8'></head><body style='background:#0a1f0a;color:#00ff41;font-family:monospace;padding:20px;'>"
-            "<h2>✓ Format สำเร็จ!</h2>"
-            "<p>ลบไฟล์ทั้งหมด " + String(deletedCount) + " ไฟล์</p>"
-            "<p>SPIFFS ถูก format เรียบร้อยแล้ว</p>"
-            "<p>กำลังกลับหน้าหลัก...</p>"
+            "<h2>✓ Format Successful!</h2>"
+            "<p>Deleted " + String(deletedCount) + " files</p>"
+            "<p>SPIFFS formatted successfully</p>"
+            "<p>Redirecting to home...</p>"
             "<script>setTimeout(function(){window.location='/';}, 3000);</script>"
             "</body></html>");
     } else {
-        Serial.println("[WEB] ✗ Format ล้มเหลว!");
+        Serial.println("[WEB] ✗ Format failed!");
         
         server.send(500, "text/html", 
             "<html><head><meta charset='UTF-8'></head><body style='background:#0a1f0a;color:#ff5f56;font-family:monospace;padding:20px;'>"
-            "<h2>✗ Format ล้มเหลว!</h2>"
-            "<p>ไม่สามารถ format SPIFFS ได้</p>"
-            "<p><a href='/' style='color:#00ff41;'>กลับหน้าหลัก</a></p>"
+            "<h2>✗ Format Failed!</h2>"
+            "<p>Cannot format SPIFFS</p>"
+            "<p><a href='/' style='color:#00ff41;'>Back to Home</a></p>"
             "</body></html>");
     }
     
@@ -498,15 +498,15 @@ void handleNotFound() {
 
 // ==================== WEB SERVER FUNCTIONS ====================
 void startWebServer() {
-    Serial.println("[WEB] หยุดการดักจับและเริ่ม Web File Manager...");
+    Serial.println("[WEB] Stopping capture and starting Web File Manager...");
     
-    // หยุดการดักจับ
+    // Stop capture
     if (isCapturing) {
         stopCapture();
     }
     
 #ifdef USB_MSC_ENABLED
-    // เริ่ม USB และ MSC พร้อมกัน (เฉพาะ boards ที่รองรับ)
+    // Start USB and MSC together (boards with support only)
     initUSB();
     initUSBMSC();
     usbMscMode = true;
@@ -515,19 +515,19 @@ void startWebServer() {
     Serial.println("[WEB] USB MSC: Not supported on this board");
 #endif
     
-    // เริ่ม AP mode
+    // Start AP mode
     WiFi.mode(WIFI_AP);
     WiFi.softAP("ZipherPcap", "zipher123");
     
     IPAddress IP = WiFi.softAPIP();
-    Serial.printf("[WEB] AP เริ่มแล้ว: ZipherPcap\n");
+    Serial.printf("[WEB] AP started: ZipherPcap\n");
     Serial.printf("[WEB] Password: zipher123\n");
     Serial.printf("[WEB] IP: %s\n", IP.toString().c_str());
     
-    // เริ่ม DNS Server สำหรับ Captive Portal
+    // Start DNS Server for Captive Portal
     dnsServer.start(53, "*", IP);
     
-    // ตั้งค่า Web Server routes
+    // Configure Web Server routes
     server.on("/", handleRoot);
     server.on("/download", handleDownload);
     server.on("/view", handleView);
@@ -540,9 +540,9 @@ void startWebServer() {
     webServerMode = true;
     
     Serial.println("[WEB] ========================================");
-    Serial.println("[WEB] 🌐 Web File Manager เริ่มแล้ว!");
+    Serial.println("[WEB] 🌐 Web File Manager started!");
 #ifdef USB_MSC_ENABLED
-    Serial.println("[WEB] 📱 USB Drive เริ่มแล้ว!");
+    Serial.println("[WEB] 📱 USB Drive started!");
 #else
     Serial.println("[WEB] 📱 USB Drive: Not available (board limitation)");
 #endif
@@ -550,12 +550,12 @@ void startWebServer() {
     Serial.println("[WEB] WiFi: ZipherPcap / zipher123");
     Serial.println("[WEB] Web: http://192.168.4.1");
 #ifdef USB_MSC_ENABLED
-    Serial.println("[WEB] USB: คอมจะเห็น ESP32 เป็น USB Drive");
+    Serial.println("[WEB] USB: Computer will see ESP32 as USB Drive");
 #endif
-    Serial.println("[WEB] กดปุ่ม IO0 ค้าง 3 วิเพื่อกลับสู่โหมดดักจับ");
+    Serial.println("[WEB] Hold IO0 button for 3s to return to capture mode");
     Serial.println("[WEB] ========================================");
     
-    // กระพิบ LED เพื่อแสดงว่าเข้า Web mode
+    // Blink LED to show Web mode entry
     for (int i = 0; i < 5; i++) {
         blinkLED(200);
         delay(200);
@@ -564,11 +564,11 @@ void startWebServer() {
 
 void stopWebServer() {
     Serial.println("[WEB] ========================================");
-    Serial.println("[WEB] ปิด Web Server และกลับสู่โหมดดักจับ...");
+    Serial.println("[WEB] Stopping Web Server and returning to capture mode...");
     Serial.println("[WEB] ========================================");
     
 #ifdef USB_MSC_ENABLED
-    // ปิด USB MSC และ USB (เฉพาะ boards ที่รองรับ)
+    // Stop USB MSC and USB (boards with support only)
     if (usbMscMode) {
         deinitUSBMSC();
     }
@@ -582,15 +582,15 @@ void stopWebServer() {
     WiFi.mode(WIFI_OFF);
     delay(500);
     
-    // กระพิบ LED เพื่อแสดงว่าออกจาก Web mode
+    // Blink LED to show Web mode exit
     for (int i = 0; i < 3; i++) {
         blinkLED(100);
         delay(100);
     }
     
-    Serial.println("[WEB] กลับสู่โหมดดักจับ...");
+    Serial.println("[WEB] Returning to capture mode...");
     
-    // เริ่มต้นระบบใหม่
+    // Reinitialize system
     initWiFi();
     deepScanAllAPs();
     startCapture();

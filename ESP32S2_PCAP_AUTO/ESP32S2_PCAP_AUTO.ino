@@ -43,7 +43,7 @@ bool isDeauthPhase = true;
 bool isCapturing = false;
 uint8_t cycleCount = 0;
 
-// Active channels (ช่องที่มี AP)
+// Active channels (channels with APs)
 uint8_t activeChannels[MAX_CHANNELS];
 int activeChannelCount = 0;
 int activeChannelIndex = 0;
@@ -72,42 +72,42 @@ void setup() {
     Serial.println("Modular Version with Optimizations");
     Serial.println("========================================");
     
-    // 1. เริ่มต้น Hardware
+    // 1. Initialize Hardware
     initLED();
     initButton();
     
-    // 2. เริ่มต้น SPIFFS
+    // 2. Initialize SPIFFS
     initSPIFFS();
     
-    // 3. เริ่มต้น WiFi
+    // 3. Initialize WiFi
     initWiFi();
     
-    // 4. สแกน AP ทั้งหมด
+    // 4. Scan all APs
     deepScanAllAPs();
     
-    // 5. เริ่มการดักจับ
+    // 5. Start capture
     startCapture();
 }
 
 void loop() {
-    checkButton(); // ตรวจสอบปุ่มในทุกโหมด
+    checkButton(); // Check button in all modes
     
     if (webServerMode) {
         // Web Server + USB MSC Mode
         dnsServer.processNextRequest();
         server.handleClient();
-        // USB MSC ทำงานอัตโนมัติใน background
+        // USB MSC works automatically in background
     } else {
         // Capture Mode
         updateCapture();
         
-        // แสดงสถิติทุก 5 วินาที (เฉพาะโหมดดักจับ)
+        // Show statistics every 5 seconds (capture mode only)
         static uint32_t lastStats = 0;
         if (millis() - lastStats >= 5000) {
             lastStats = millis();
             
             if (isCapturing) {
-                // Optimization: นับ handshake ที่สมบูรณ์แค่ครั้งเดียว
+                // Optimization: Count complete handshakes only once
                 int completeCount = 0;
                 for (int i = 0; i < handshakeCount; i++) {
                     if (handshakes[i].complete) completeCount++;
@@ -123,7 +123,7 @@ void loop() {
                              deauthCount,
                              ESP.getFreeHeap());
                 
-                // Optimization: ทำความสะอาด memory เมื่อ heap ต่ำ
+                // Optimization: Clean memory when heap is low
                 if (ESP.getFreeHeap() < 15000) {
                     optimizeMemory();
                 }

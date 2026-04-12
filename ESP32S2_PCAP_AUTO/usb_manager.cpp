@@ -11,12 +11,12 @@ USBMSC msc;
 
 // ==================== USB MSC CALLBACKS ====================
 int32_t onWrite(uint32_t lba, uint32_t offset, uint8_t* buffer, uint32_t bufsize) {
-    // ป้องกันการเขียนไฟล์ - อ่านอย่างเดียว
+    // Prevent file writing - read-only
     return bufsize;
 }
 
 int32_t onRead(uint32_t lba, uint32_t offset, void* buffer, uint32_t bufsize) {
-    // อ่านข้อมูลจาก SPIFFS
+    // Read data from SPIFFS
     return bufsize;
 }
 
@@ -27,21 +27,21 @@ bool onStartStop(uint8_t power_condition, bool start, bool load_eject) {
 
 // ==================== USB FUNCTIONS ====================
 void initUSB() {
-    Serial.println("[USB] เริ่มต้น USB...");
+    Serial.println("[USB] Initializing USB...");
     USB.begin();
     delay(1000);
 }
 
 void deinitUSB() {
-    Serial.println("[USB] ปิด USB...");
-    // USB.end() ไม่มีใน ESP32S2 - ใช้ begin() เท่านั้น
+    Serial.println("[USB] Stopping USB...");
+    // USB.end() not available in ESP32S2 - use begin() only
     delay(500);
 }
 
 void initUSBMSC() {
-    Serial.println("[USB] เริ่มต้น USB MSC...");
+    Serial.println("[USB] Initializing USB MSC...");
     
-    // ตั้งค่า USB MSC
+    // Configure USB MSC
     msc.vendorID("ZipherTech");
     msc.productID("PcapCapture");
     msc.productRevision("1.0");
@@ -50,12 +50,12 @@ void initUSBMSC() {
     msc.onStartStop(onStartStop);
     msc.mediaPresent(true);
     
-    // คำนวณขนาด SPIFFS เป็น sectors (512 bytes per sector)
+    // Calculate SPIFFS size in sectors (512 bytes per sector)
     size_t totalBytes = SPIFFS.totalBytes();
     
-    // ป้องกัน division by zero และค่าที่ไม่ถูกต้อง
+    // Prevent division by zero and invalid values
     if (totalBytes == 0) {
-        Serial.println("[USB] ERROR: SPIFFS totalBytes = 0, ไม่สามารถเริ่ม USB MSC ได้!");
+        Serial.println("[USB] ERROR: SPIFFS totalBytes = 0, cannot start USB MSC!");
         usbMscMode = false;
         return;
     }
@@ -64,18 +64,18 @@ void initUSBMSC() {
     
     msc.begin(sectorCount, 512);
     
-    Serial.printf("[USB] MSC เริ่มแล้ว - %u sectors (%u KB)\n", sectorCount, totalBytes / 1024);
+    Serial.printf("[USB] MSC started - %u sectors (%u KB)\n", sectorCount, totalBytes / 1024);
 }
 
 void deinitUSBMSC() {
-    Serial.println("[USB] ปิด USB MSC...");
+    Serial.println("[USB] Stopping USB MSC...");
     msc.end();
     usbMscMode = false;
 }
 
 #else
 // ==================== DUMMY FUNCTIONS FOR NON-USB BOARDS ====================
-// ฟังก์ชันเหล่านี้จะถูกใช้เมื่อ board ไม่รองรับ USB MSC
-// ไม่ต้องทำอะไร - inline functions ใน header จะจัดการให้
+// These functions will be used when board doesn't support USB MSC
+// No action needed - inline functions in header will handle it
 
 #endif // USB_MSC_ENABLED

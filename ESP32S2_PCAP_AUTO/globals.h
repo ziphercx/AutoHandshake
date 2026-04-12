@@ -13,7 +13,7 @@ extern int handshakeCount;
 extern int beaconTrackerCount;
 extern uint32_t packetCount;
 extern uint32_t deauthCount;
-extern uint32_t filteredPacketCount;  // นับ packet ที่ผ่านการกรอง
+extern uint32_t filteredPacketCount;  // Count filtered packets
 
 extern uint8_t currentChannel;
 extern uint32_t channelStartTime;
@@ -21,7 +21,7 @@ extern bool isDeauthPhase;
 extern bool isCapturing;
 extern uint8_t cycleCount;
 
-// Active channels (ช่องที่มี AP)
+// Active channels (channels with APs)
 extern uint8_t activeChannels[MAX_CHANNELS];
 extern int activeChannelCount;
 extern int activeChannelIndex;
